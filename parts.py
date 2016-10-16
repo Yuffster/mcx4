@@ -2,6 +2,9 @@ class Microcontroller():
 
     _gpios = 0
     _xbuses = 0
+    
+    # Registers
+    _acc = 0
 
     _pnums = None  # {type:number}
     _ports = None  # {name:[Port,Port...]}
@@ -53,6 +56,27 @@ class Microcontroller():
             raise PortException("Port out of supported range: "+name)
         return (pmap[ptype], pnum)
 
+    def execute(self, code):
+        lines = code.split('\n')
+        for l in lines:
+            self._run_line(l.strip())
+
+    def _run_line(self, line):
+        if line[0] == "#":
+            return
+        tokens = line.split(' ')
+        command = tokens.pop(0)
+        if command == "add":
+            self._acc += int(tokens.pop(0))
+        elif command == 'sub':
+            self._acc -= int(tokens.pop(0))
+        else:
+            raise CommandException("Invalid command: "+command)
+
+    @property
+    def acc(self):
+        return self._acc
+    
     @property
     def name(self):
         return self._name
@@ -169,3 +193,5 @@ class Circuit():
 class PortException(Exception): pass
 class PortSelfLinkException(PortException): pass
 class PortCompatException(PortException): pass
+class CommandException(PortException): pass
+

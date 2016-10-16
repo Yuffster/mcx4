@@ -87,3 +87,14 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(0, mc2.p0.read())
         mc3.p0.link(mc1.p0)
         self.assertEqual(22, mc2.p0.read())
+
+    def test_basic_code(self):
+        mc1 = parts.Microcontroller(name="mc1", gpio=1)
+        mc1.execute('add 1')
+        self.assertEqual(1, mc1.acc)
+        mc1.execute('add 1')
+        self.assertEqual(2, mc1.acc)
+        mc1.execute('sub 1')
+        self.assertEqual(1, mc1.acc)
+        mc1.execute('#sub 1')
+        self.assertEqual(1, mc1.acc)
