@@ -112,10 +112,30 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(1, mc1.acc)
 
     def test_dat_registers(self):
-        mc = parts.Microcontroller(name='mc1', dats=3)
+        mc = parts.Microcontroller(name='mc1', dats=1)
         d0 = mc.dat0
         dat = mc.dat
         self.assertEqual(d0, dat)
         self.assertIsInstance(d0, parts.Interface)
         d0.write(5)
         self.assertEqual(5, d0.read())
+        with self.assertRaises(x.RegisterException):
+            mc.register('d1')
+
+    def test_register_independence(self):
+        mc = parts.Microcontroller(name='mc1', dats=3)
+        d0 = mc.dat0
+        d1 = mc.dat1
+        d2 = mc.dat2
+        d0.write(5)
+        d1.write(6)
+        d2.write(7)
+        self.assertEqual(5, d0.read())
+        self.assertEqual(6, d1.read())
+        self.assertEqual(7, d2.read())
+        d0.inc()
+        d1.inc()
+        d2.inc()
+        self.assertEqual(6, d0.read())
+        self.assertEqual(7, d1.read())
+        self.assertEqual(8, d2.read())
