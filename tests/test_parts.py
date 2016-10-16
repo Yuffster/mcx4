@@ -4,6 +4,7 @@ import parts
 class MicrocontrollerTestCase(unittest.TestCase):
 
     def setUp(self):
+        parts.Microcontroller._part_count = 0
         self.mc = parts.Microcontroller(gpio=2, xbus=3)
 
     def test_get_port_gpio(self):
@@ -38,6 +39,10 @@ class MicrocontrollerTestCase(unittest.TestCase):
             with self.assertRaises(parts.PortException):
                 self.mc.get_port(p)
 
+    def test_link_nonport(self):
+        with self.assertRaises(TypeError):
+            self.mc.p0.link(self.mc)
+
     def test_get_port_shorthand(self):
         self.assertIsInstance(self.mc.p1, parts.GPIO)
         self.assertIsInstance(self.mc.x0, parts.XBUS)
@@ -50,15 +55,35 @@ class MicrocontrollerTestCase(unittest.TestCase):
         p0 = self.mc.p0
         p1 = self.mc.p1
         x0 = self.mc.x0
-        mc2 = parts.Microcontroller(gpio=1)
+        mc2 = parts.Microcontroller(name="mc2", gpio=1)
         p0b = mc2.p0
         with self.assertRaises(parts.PortSelfLinkException):
             p0.link(p1)
         with self.assertRaises(parts.PortCompatException):
             p0.link(x0)
         p0b.link(p1)
-        self.assertEqual(p0b._links, [p1])
-        self.assertEqual(p1._links, [p0b])
-        p0b.unlink(p1)
-        self.assertEqual(p0b._links, [])
-        self.assertEqual(p1._links, [])
+        self.assertEqual(p0b._circuit, p1._circuit)
+        p0b.unlink()
+        self.assertEqual(p0b._circuit, None)
+        p0b.link(p1)
+        self.assertEqual(p0b._circuit, p1._circuit)
+
+    def test_gpio_read_write(self):
+        mc1 = parts.Microcontroller(name="mc1", gpio=1)
+        mc2 = parts.Microcontroller(name="mc2", gpio=1)
+        mc3 = parts.Microcontroller(name="mc3", gpio=1)
+        mc1.p0.link(mc2.p0)
+        mc1.p0.write(100)
+        mc2.p0.write(50)
+        self.assertEqual(100, mc2.p0.read())
+        self.assertEqual(50, mc1.p0.read())
+        mc1.p0.write(0)
+        mc1.p0.link(mc3.p0)
+        self.assertEqual(0, mc2.p0.read())
+        mc3.p0.write(22)
+        self.assertEqual(22, mc2.p0.read())
+        self.assertEqual(50, mc3.p0.read())
+        mc3.p0.unlink()
+        self.assertEqual(0, mc2.p0.read())
+        mc3.p0.link(mc1.p0)
+        self.assertEqual(22, mc2.p0.read())

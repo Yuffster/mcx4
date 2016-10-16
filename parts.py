@@ -6,12 +6,21 @@ class Microcontroller():
     _pnums = None  # {type:number}
     _ports = None  # {name:[Port,Port...]}
 
-    def __init__(self, gpio=None, xbus=None):
+    _name = ""
+
+    _part_count = 0  # static
+
+    def __init__(self, name=None, gpio=None, xbus=None):
         self._pnums = {'p':self._gpios, 'x':self._xbuses}
         if gpio is not None:
             self._pnums['p'] = gpio - 1
         if xbus is not None:
             self._pnums['x'] = xbus - 1
+        if name is not None:
+            self._name = name
+        else:
+            self._name = 'mc{}'.format(Microcontroller._part_count)
+        Microcontroller._part_count += 1
         self._ports = {'p':{}, 'x':{}}
 
     def __getattr__(self, name):
@@ -25,7 +34,7 @@ class Microcontroller():
         pclass, pnum = self._normalize_port_name(name)
         ps = self._ports[name[0]]
         if pnum not in ps:
-            ps[pnum] = pclass(self)
+            ps[pnum] = pclass(self, name)
         return ps[pnum]
 
     def _normalize_port_name(self, name):
@@ -44,51 +53,117 @@ class Microcontroller():
             raise PortException("Port out of supported range: "+name)
         return (pmap[ptype], pnum)
 
+    @property
+    def name(self):
+        return self._name
+
 
 class Port():
 
     _parent = None  # Microcontroller
-    _links = None  # [Port, Port...]
+    _output = 0  # Output buffer.
+    _circuit = None
+    _name = ""
 
-    def __init__(self, mc):
+    def __init__(self, mc, name):
         self._parent = mc
         self._links = []
+        self._name = name
+
+    def write(self, val):
+        self._output = val
+
+    def read(self):
+        """
+        Returns the maximum output of all attached ports.
+        """
+        if self._circuit is None:
+            return 0
+        return self._circuit.max_value(self)
 
     def link(self, port):
-        if port in self._links:
-            return
-        self._validate_link(port)
-        self._links.append(port)
-        port.link(self)
+        if not isinstance(port, Port):
+            raise TypeError("Invalid port type: "+port.__class__.__name__)
+        c = port._circuit
+        if c is None:
+            c = self._circuit or Circuit()
+        c.link(self, port)
+        self._circuit = c
+        port._circuit = c
 
-    def unlink(self, port):
-        if port in self._links:
-            port._links.remove(self)
-            self._links.remove(port)
-
-    def _validate_link(self, port):
-        if not isinstance(port, self.__class__):
-            raise PortCompatException(
-                "Incompatible ports: {} / {}"
-                .format(self.__class__, port.__class__)
-            )
-        if self.parent == port.parent:
-            raise PortSelfLinkException("Part connected to self.")
-        for p in self._links:
-            if p.parent == self.parent:
-                raise PortException("Part connected to self.")
+    def unlink(self):
+        self._circuit.unlink(self)
+        self._circuit = None
 
     @property
     def parent(self):
         return self._parent
 
+    @property
+    def output(self):
+        return self._output
+
+    @property
+    def name(self):
+        return self.parent.name+"."+self._name
+
 
 class GPIO(Port):
-    pass
+
+    def write(self, val):
+        """
+        GPIO values are constant signals from 0 to 100.
+        """
+        val = int(val)
+        if val > 100:
+            val = 100
+        if val < 0:
+            val = 0
+        self._output = val
 
 
 class XBUS(Port):
     pass
+
+
+class Circuit():
+
+    _attached = None  # [Port, Port]
+
+    def __init__(self):
+        self._attached = []
+
+    def link(self, *ports):
+        for port in ports:
+            if port in self._attached:
+                continue
+            self._validate_link(port)
+            self._attached.append(port)
+
+    def unlink(self, port):
+        self._attached.remove(port)
+
+    def max_value(self, exclude=None):
+        out = []
+        for p in self._attached:
+            if p != exclude:
+                out.append(p.output)
+        if len(out) > 0:
+            return max(out)
+        return 0
+
+    def _validate_link(self, port):
+        for p in self._attached:
+            if not isinstance(port, p.__class__):
+                raise PortCompatException(
+                    "Incompatible ports: {} / {}"
+                    .format(self.__class__, port.__class__)
+                )
+            if p.parent == port.parent:
+                raise PortSelfLinkException(
+                    "Part linked to self ({} via {})"
+                    .format(port.name, p.name)
+            )
 
 
 class PortException(Exception): pass
