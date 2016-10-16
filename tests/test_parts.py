@@ -1,5 +1,6 @@
 import unittest
 import parts
+import exceptions as x
 
 class MicrocontrollerTestCase(unittest.TestCase):
 
@@ -14,7 +15,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertIsInstance(p1, parts.GPIO)
         self.assertEqual(self.mc.get_port('p0'), p0)
         self.assertNotEqual(p1, p0)
-        with self.assertRaises(parts.PortException):
+        with self.assertRaises(x.PortException):
             self.mc.get_port('p2')
 
     def test_get_port_xbus(self):
@@ -29,14 +30,14 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(x2, self.mc.get_port('x2'))
         self.assertNotEqual(x1, x2)
         self.assertNotEqual(x1, x0)
-        with self.assertRaises(parts.PortException):
+        with self.assertRaises(x.PortException):
             self.mc.get_port('x3')
         self.assertNotEqual(x1, x0)
 
     def test_get_invalid_port(self):
         bad_ports = ['lawl', 'l0', 'python']
         for p in bad_ports:
-            with self.assertRaises(parts.PortException):
+            with self.assertRaises(x.PortException):
                 self.mc.get_port(p)
 
     def test_link_nonport(self):
@@ -46,7 +47,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
     def test_get_port_shorthand(self):
         self.assertIsInstance(self.mc.p1, parts.GPIO)
         self.assertIsInstance(self.mc.x0, parts.XBUS)
-        with self.assertRaises(parts.PortException):
+        with self.assertRaises(x.PortException):
             self.mc.x10
         with self.assertRaises(AttributeError):
             self.mc.foobarbizz
@@ -57,9 +58,9 @@ class MicrocontrollerTestCase(unittest.TestCase):
         x0 = self.mc.x0
         mc2 = parts.Microcontroller(name="mc2", gpio=1)
         p0b = mc2.p0
-        with self.assertRaises(parts.PortSelfLinkException):
+        with self.assertRaises(x.PortSelfLinkException):
             p0.link(p1)
-        with self.assertRaises(parts.PortCompatException):
+        with self.assertRaises(x.PortCompatException):
             p0.link(x0)
         p0b.link(p1)
         self.assertEqual(p0b._circuit, p1._circuit)
@@ -98,3 +99,5 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(1, mc1.acc)
         mc1.execute('#sub 1')
         self.assertEqual(1, mc1.acc)
+        with self.assertRaises(x.CommandException):
+            mc1.execute('lawl')

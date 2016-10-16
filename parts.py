@@ -1,3 +1,5 @@
+import exceptions as x
+
 class Microcontroller():
 
     _gpios = 0
@@ -48,12 +50,12 @@ class Microcontroller():
         ptype = name[0]
         pnum = name[1:]
         if ptype not in pmap:
-            raise PortException("Unknown port type: "+ptype)
+            raise x.PortException("Unknown port type: "+ptype)
         if not pnum.isdigit():
-            raise PortException("Invalid port number: "+pnum)
+            raise x.PortException("Invalid port number: "+pnum)
         pnum = int(pnum)
         if self._pnums[ptype] < pnum:
-            raise PortException("Port out of supported range: "+name)
+            raise x.PortException("Port out of supported range: "+name)
         return (pmap[ptype], pnum)
 
     def execute(self, code):
@@ -71,7 +73,7 @@ class Microcontroller():
         elif command == 'sub':
             self._acc -= int(tokens.pop(0))
         else:
-            raise CommandException("Invalid command: "+command)
+            raise x.CommandException("Invalid command: "+command)
 
     @property
     def acc(self):
@@ -179,19 +181,12 @@ class Circuit():
     def _validate_link(self, port):
         for p in self._attached:
             if not isinstance(port, p.__class__):
-                raise PortCompatException(
+                raise x.PortCompatException(
                     "Incompatible ports: {} / {}"
                     .format(self.__class__, port.__class__)
                 )
             if p.parent == port.parent:
-                raise PortSelfLinkException(
+                raise x.PortSelfLinkException(
                     "Part linked to self ({} via {})"
                     .format(port.name, p.name)
             )
-
-
-class PortException(Exception): pass
-class PortSelfLinkException(PortException): pass
-class PortCompatException(PortException): pass
-class CommandException(PortException): pass
-
