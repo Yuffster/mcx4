@@ -37,3 +37,11 @@ class MicrocontrollerTestCase(unittest.TestCase):
         for p in bad_ports:
             with self.assertRaises(parts.PortException):
                 self.mc.get_port(p)
+
+    def test_get_port_shorthand(self):
+        self.assertIsInstance(self.mc.p1, parts.GPIO)
+        self.assertIsInstance(self.mc.x0, parts.XBUS)
+        with self.assertRaises(parts.PortException):
+            self.mc.x10
+        with self.assertRaises(AttributeError):
+            self.mc.foobarbizz

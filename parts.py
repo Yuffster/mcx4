@@ -14,6 +14,12 @@ class Microcontroller():
             self._pnums['x'] = xbus - 1
         self._ports = {'p':{}, 'x':{}}
 
+    def __getattr__(self, name):
+        # Maybe it's a port?
+        if name[0] in self._pnums and name[1:].isdigit():
+            return self.get_port(name)
+        raise(AttributeError("Invalid attribute: {}".format(name)))
+
     def get_port(self, name):
         name = name.lower()
         pclass, pnum = self._normalize_port_name(name)
