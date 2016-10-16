@@ -16,26 +16,35 @@ class Microcontroller():
 
     def get_port(self, name):
         name = name.lower()
+        pclass, pnum = self._normalize_port_name(name)
+        ps = self._ports[name[0]]
+        if pnum not in ps:
+            ps[pnum] = pclass(self)
+        return ps[pnum]
+
+    def _normalize_port_name(self, name):
+        """
+        Takes a port name and returns its number and type.
+        """
+        pmap = {'p':GPIO, 'x':XBUS}
         ptype = name[0]
         pnum = name[1:]
-        if ptype not in self._ports:
+        if ptype not in pmap:
             raise PortException("Unknown port type: "+ptype)
         if not pnum.isdigit():
             raise PortException("Invalid port number: "+pnum)
         pnum = int(pnum)
         if self._pnums[ptype] < pnum:
             raise PortException("Port out of supported range: "+name)
-        ps = self._ports[ptype]
-        if pnum not in ps:
-            if ptype == "p":
-                ps[pnum] = GPIO()
-            else:
-                ps[pnum] = XBUS()
-        return ps[pnum]
+        return (pmap[ptype], pnum)
 
 
 class Port():
-    pass
+
+    _parent = None  # Microcontroller
+
+    def __init__(self, mc):
+        self._parent = mc
 
 
 class GPIO(Port):
