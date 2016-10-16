@@ -4,9 +4,9 @@ class Microcontroller():
 
     _gpios = 0
     _xbuses = 0
+    _dats = 0
     
-    # Registers
-    _acc = 0
+    _registers = None  # {name:Interface}
 
     _pnums = None  # {type:number}
     _ports = None  # {name:[Port,Port...]}
@@ -15,7 +15,7 @@ class Microcontroller():
 
     _part_count = 0  # static
 
-    def __init__(self, name=None, gpio=None, xbus=None):
+    def __init__(self, name=None, gpio=None, xbus=None, dats=None):
         self._pnums = {'p':self._gpios, 'x':self._xbuses}
         if gpio is not None:
             self._pnums['p'] = gpio - 1
@@ -23,14 +23,24 @@ class Microcontroller():
             self._pnums['x'] = xbus - 1
         if name is not None:
             self._name = name
+        if dats is not None:
+            self._dats = dats
         else:
             self._name = 'mc{}'.format(Microcontroller._part_count)
         Microcontroller._part_count += 1
+        self._initialize_registers()
         self._ports = {'p':{}, 'x':{}}
 
     def __getattr__(self, name):
-        # Maybe it's a port?
-        if name[0] in self._pnums and name[1:].isdigit():
+        name = name.lower()
+        try:
+            reg = self.register(name)
+        except x.RegisterException:
+            reg = False
+        if reg is not False:
+            return reg
+        # Check ports if it's a valid port name.
+        if name[0].isalpha() and name[1:].isdigit():
             return self.get_port(name)
         raise(AttributeError("Invalid attribute: {}".format(name)))
 
@@ -41,6 +51,15 @@ class Microcontroller():
         if pnum not in ps:
             ps[pnum] = pclass(self, name)
         return ps[pnum]
+
+    def register(self, name):
+        """
+        Returns either an Interface with read() and write().
+        """
+        name = name.lower()
+        if name in self._registers:
+            return self._registers[name]
+        raise x.RegisterException("Register not found: "+name)
 
     def _normalize_port_name(self, name):
         """
@@ -58,6 +77,15 @@ class Microcontroller():
             raise x.PortException("Port out of supported range: "+name)
         return (pmap[ptype], pnum)
 
+    def _initialize_registers(self):
+        self._registers = {'acc': Interface(self, 'acc')}
+        for n in range(0, self._dats):
+            name = "dat{}".format(n)
+            self._registers[name] = Interface(self, name)
+        if self._dats > 0:
+            # Handy alias when there's only one dat register.
+            self._registers['dat'] = self._registers['dat0']
+
     def execute(self, code):
         lines = code.split('\n')
         for l in lines:
@@ -69,19 +97,20 @@ class Microcontroller():
         tokens = line.split(' ')
         command = tokens.pop(0)
         if command == "add":
-            self._acc += int(tokens.pop(0))
+            self.register('acc').inc(int(tokens.pop(0)))
         elif command == 'sub':
-            self._acc -= int(tokens.pop(0))
+            self.register('acc').dec(int(tokens.pop(0)))
         else:
             raise x.CommandException("Invalid command: "+command)
-
-    @property
-    def acc(self):
-        return self._acc
     
     @property
     def name(self):
         return self._name
+
+    @property
+    def acc(self):
+        acc = self.register('acc')
+        return acc.read()
 
 
 class Port():
@@ -190,3 +219,26 @@ class Circuit():
                     "Part linked to self ({} via {})"
                     .format(port.name, p.name)
             )
+
+
+class Interface():
+
+    _val = 0
+    _name = ''
+    _parent = None  # Microcontroller, probably.
+
+    def __init__(self, parent, name=''):
+        self._name = name
+        self._parent = parent
+
+    def read(self):
+        return self._val
+
+    def write(self, val):
+        self._val = val
+
+    def inc(self, n=1):
+        self._val += 1
+
+    def dec(self, n=1):
+        self._val -= n

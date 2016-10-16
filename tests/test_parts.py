@@ -101,3 +101,21 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(1, mc1.acc)
         with self.assertRaises(x.CommandException):
             mc1.execute('lawl')
+
+    def test_acc_register(self):
+        mc1 = parts.Microcontroller(name='mc1', gpio=1)
+        acc = mc1.register('acc')
+        self.assertEqual(0, acc.read())
+        self.assertEqual(0, mc1.acc)
+        mc1.execute('add 1')
+        self.assertEqual(1, acc.read())
+        self.assertEqual(1, mc1.acc)
+
+    def test_dat_registers(self):
+        mc = parts.Microcontroller(name='mc1', dats=3)
+        d0 = mc.dat0
+        dat = mc.dat
+        self.assertEqual(d0, dat)
+        self.assertIsInstance(d0, parts.Interface)
+        d0.write(5)
+        self.assertEqual(5, d0.read())
