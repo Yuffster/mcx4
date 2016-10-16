@@ -48,9 +48,39 @@ class Microcontroller():
 class Port():
 
     _parent = None  # Microcontroller
+    _links = None  # [Port, Port...]
 
     def __init__(self, mc):
         self._parent = mc
+        self._links = []
+
+    def link(self, port):
+        if port in self._links:
+            return
+        self._validate_link(port)
+        self._links.append(port)
+        port.link(self)
+
+    def unlink(self, port):
+        if port in self._links:
+            port._links.remove(self)
+            self._links.remove(port)
+
+    def _validate_link(self, port):
+        if not isinstance(port, self.__class__):
+            raise PortCompatException(
+                "Incompatible ports: {} / {}"
+                .format(self.__class__, port.__class__)
+            )
+        if self.parent == port.parent:
+            raise PortSelfLinkException("Part connected to self.")
+        for p in self._links:
+            if p.parent == self.parent:
+                raise PortException("Part connected to self.")
+
+    @property
+    def parent(self):
+        return self._parent
 
 
 class GPIO(Port):
@@ -62,3 +92,5 @@ class XBUS(Port):
 
 
 class PortException(Exception): pass
+class PortSelfLinkException(PortException): pass
+class PortCompatException(PortException): pass
