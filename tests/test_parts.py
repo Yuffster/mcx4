@@ -90,7 +90,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc3.p0.link(mc1.p0)
         self.assertEqual(22, mc2.p0.read())
 
-    def test_basic_code(self):
+    def test_add_and_sub(self):
         mc1 = parts.Microcontroller(name="mc1", gpio=1)
         mc1.execute('add 1')
         self.assertEqual(1, mc1.acc)
@@ -102,6 +102,12 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(1, mc1.acc)
         with self.assertRaises(x.CommandException):
             mc1.execute('lawl')
+
+    def test_mul(self):
+        mc = parts.Microcontroller()
+        mc.register('acc').write(2)
+        mc.execute('mul 5')
+        self.assertEqual(10, mc.acc)
 
     def test_acc_register(self):
         mc1 = parts.Microcontroller(name='mc1', gpio=1)

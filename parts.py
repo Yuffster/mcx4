@@ -356,6 +356,11 @@ class CPU():
         a = self._mc.value(a)
         self._mc.register('acc').write(self._mc.acc + a)
 
+    def do_mul(self, a):
+        a = self._mc.value(a)
+        acc = self._mc.register('acc')
+        acc.write(acc.read()*a)
+
     def do_sub(self, a):
         a = self._mc.value(a)
         self._mc.register('acc').write(self._mc.acc - a)
