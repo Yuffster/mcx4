@@ -238,7 +238,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.execute(code)
         self.assertEqual(1, mc.acc)
 
-    def test_mov_to_register(self):
+    def test_mov_to_port(self):
         c1 = """
           mov 10 p0
         """
