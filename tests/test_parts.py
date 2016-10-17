@@ -19,15 +19,16 @@ class MicrocontrollerTestCase(unittest.TestCase):
             self.mc.get_port('p2')
 
     def test_get_port_xbus(self):
-        x0 = self.mc.get_port('x0')
-        x1 = self.mc.get_port('x1')
-        x2 = self.mc.get_port('x2')
+        mc = parts.Microcontroller(xbus=3)
+        x0 = mc.get_port('x0')
+        x1 = mc.get_port('x1')
+        x2 = mc.get_port('x2')
         self.assertIsInstance(x0, parts.XBUS)
         self.assertIsInstance(x1, parts.XBUS)
         self.assertIsInstance(x2, parts.XBUS)
-        self.assertEqual(x0, self.mc.get_port('x0'))
-        self.assertEqual(x1, self.mc.get_port('x1'))
-        self.assertEqual(x2, self.mc.get_port('x2'))
+        self.assertEqual(x0, mc.get_port('x0'))
+        self.assertEqual(x1, mc.get_port('x1'))
+        self.assertEqual(x2, mc.get_port('x2'))
         self.assertNotEqual(x1, x2)
         self.assertNotEqual(x1, x0)
         with self.assertRaises(x.PortException):
@@ -179,7 +180,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         with self.assertRaises(x.RegisterException):
             mc.execute('mov 1 dat')
 
-    def test_test_instructions(self):
+    def test_teq(self):
         code = """
           teq acc 2
         + mov 1 acc
@@ -193,7 +194,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.execute(code)
         self.assertEqual(1, mc.acc)
 
-    def test_cp(self):
+    def test_tcp(self):
         code = """
           tcp acc 2
         + mov 1 acc
@@ -211,7 +212,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.execute(code)
         self.assertEqual(2, mc.acc)
 
-    def test_lt(self):
+    def test_tlt(self):
         code = """
           tlt acc 2
         + mov 1 acc
@@ -224,7 +225,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.execute(code)
         self.assertEqual(3, mc.acc)
 
-    def test_gt(self):
+    def test_tgt(self):
         code = """
           tgt acc 2
         + mov 3 acc
@@ -236,3 +237,19 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.register('acc').write(2)
         mc.execute(code)
         self.assertEqual(1, mc.acc)
+
+    def test_mov_to_register(self):
+        c1 = """
+          mov 10 p0
+        """
+        c2 = """
+          add p1
+        """
+        mc1 = parts.Microcontroller(gpio=1)
+        mc2 = parts.Microcontroller(gpio=2)
+        mc1.p0.link(mc2.p1)
+        mc1.execute(c1)
+        mc2.execute(c2)
+        self.assertEqual(10, mc2.acc)
+        mc2.execute(c2)
+        self.assertEqual(20, mc2.acc)
