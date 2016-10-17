@@ -365,6 +365,13 @@ class CPU():
         acc = self._mc.register('acc')
         acc.write(acc.read()*a)
 
+    def do_not(self):
+        acc = self._mc.register('acc')
+        if acc.read() == 0:
+            acc.write(100)
+        else:
+            acc.write(0)
+
     def do_dgt(self, bit):
         """
         Rewrite ACC with one isolated digit.
@@ -404,17 +411,13 @@ class CPU():
             raise x.RegisterException("Invalid register: "+b)
         r2.write(a)
 
-    def do_not(self):
-        acc = self._mc.register('acc')
-        if acc.read() == 0:
-            acc.write(100)
-        else:
-            acc.write(0)
-
     def do_jmp(self, label):
         if label not in self._labels:
             raise x.LabelException("Label not found: "+label)
         return self._labels[label]
+
+    def do_nop(self):
+        pass  # Easiest instruction ever.
 
     def do_test(self, comp, args):
         meth = getattr(self, 'test_'+comp, None)

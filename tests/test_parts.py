@@ -109,6 +109,15 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.execute('mul 5')
         self.assertEqual(10, mc.acc)
 
+    def test_not(self):
+        mc = parts.Microcontroller()
+        self.assertEqual(0, mc.acc)
+        mc.execute("not")
+        self.assertEqual(100, mc.acc)
+        mc.register('acc').write('-999')
+        mc.execute("not")
+        self.assertEqual(0, mc.acc)
+
     def test_dgt(self):
         mc = parts.Microcontroller()
         mc.register('acc').write(567)
@@ -138,6 +147,10 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.register('acc').write(567)
         mc.execute('dst 3 9')
         self.assertEqual(0, mc.acc)
+
+    def test_nop(self):
+        mc = parts.Microcontroller()
+        mc.execute("nop")
 
     def test_acc_register(self):
         mc1 = parts.Microcontroller(name='mc1', gpio=1)
@@ -324,12 +337,3 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc = parts.Microcontroller()
         mc.execute(code)
         self.assertEqual(5, mc.acc)
-
-    def test_not(self):
-        mc = parts.Microcontroller()
-        self.assertEqual(0, mc.acc)
-        mc.execute("not")
-        self.assertEqual(100, mc.acc)
-        mc.register('acc').write('-999')
-        mc.execute("not")
-        self.assertEqual(0, mc.acc)
