@@ -98,17 +98,8 @@ class Microcontroller():
             self._run_line(l.strip())
 
     def _run_line(self, line):
-        if line[0] == "#":
-            return
-        tokens = line.split(' ')
-        command = tokens.pop(0)
-        if command == "add":
-            self.register('acc').inc(int(tokens.pop(0)))
-        elif command == 'sub':
-            self.register('acc').dec(int(tokens.pop(0)))
-        else:
-            raise x.CommandException("Invalid command: "+command)
-    
+        CPU.execute(self, line)
+
     @property
     def name(self):
         return self._name
@@ -241,10 +232,40 @@ class Interface():
         return self._val
 
     def write(self, val):
-        self._val = val
+        self._val = int(val)
 
     def inc(self, n=1):
         self._val += 1
 
     def dec(self, n=1):
         self._val -= n
+
+
+class CPU():
+
+    def execute(self, mc, line):
+        if line[0] == "#":
+            return
+        words = line.split(' ')
+        command = words.pop(0)
+        meth = getattr(self, 'do_'+command, None)
+        if meth:
+            return meth(mc, *words)
+        raise x.CommandException("Invalid instruction: "+command)
+
+    def do_add(self, mc, a):
+        r1 = mc.interface(a)
+        if r1 is not None:
+            a = r1.read()
+        a = int(a)
+        mc.register('acc').write(mc.acc + a)
+
+    def do_sub(self, mc, a):
+        r1 = mc.interface(a)
+        if r1 is not None:
+            a = r1.read()
+        a = int(a)
+        mc.register('acc').write(mc.acc - a)
+
+
+CPU = CPU()  # Singleton is the only design pattern I know.
