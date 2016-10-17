@@ -32,6 +32,12 @@ class Microcontroller():
         self._ports = {'p':{}, 'x':{}}
 
     def __getattr__(self, name):
+        reg = self.interface(name)
+        if reg:
+            return reg
+        raise(AttributeError("Invalid attribute: {}".format(name)))
+
+    def interface(self, name):
         name = name.lower()
         try:
             reg = self.register(name)
@@ -42,7 +48,7 @@ class Microcontroller():
         # Check ports if it's a valid port name.
         if name[0].isalpha() and name[1:].isdigit():
             return self.get_port(name)
-        raise(AttributeError("Invalid attribute: {}".format(name)))
+        return None
 
     def get_port(self, name):
         name = name.lower()
