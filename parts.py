@@ -93,7 +93,9 @@ class Microcontroller():
         return (pmap[ptype], pnum)
 
     def _initialize_registers(self):
-        self._registers = {'acc': Interface(self, 'acc')}
+        self._registers = {}
+        self._registers['acc'] = Interface(self, 'acc')
+        self._registers['null'] = NullInterface(self, 'null')
         for n in range(0, self._dats):
             name = "dat{}".format(n)
             self._registers[name] = Interface(self, name)
@@ -243,6 +245,15 @@ class Interface():
 
     def dec(self, n=1):
         self._val -= n
+
+class NullInterface(Interface):
+
+    """
+    Supports read and write, but always returns 0.
+    """
+
+    def write(self, val):
+        pass
 
 
 class CPU():

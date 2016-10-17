@@ -123,6 +123,12 @@ class MicrocontrollerTestCase(unittest.TestCase):
         with self.assertRaises(x.RegisterException):
             mc.register('d1')
 
+    def test_null_register(self):
+        mc = parts.Microcontroller()
+        n = mc.register('null')
+        n.write(100)
+        self.assertEqual(0, n.read())
+
     def test_register_independence(self):
         mc = parts.Microcontroller(name='mc1', dats=3)
         d0 = mc.dat0
@@ -252,6 +258,16 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(10, mc2.acc)
         mc2.execute(c2)
         self.assertEqual(20, mc2.acc)
+
+    def test_mov_to_null(self):
+        c = """
+          mov 100 null
+          mov 50 acc
+          mov null acc
+        """
+        mc = parts.Microcontroller()
+        mc.execute(c)
+        self.assertEqual(0, mc.acc)
 
     def test_jump(self):
         code = """
