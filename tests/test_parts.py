@@ -152,3 +152,87 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc1.execute('mov dat acc')
         self.assertEqual(12, acc.read())
         self.assertEqual(12, dat.read())
+
+    def test_compiler(self):
+        expected = [
+            ('mov', '1', 'acc'),
+            ('TEST', ('eq', 'acc', '1'), [
+                (True, ('mov', '2', 'acc')),
+                (False, ('mov', '0', 'acc')),
+                (True, ('mov', '1', 'dat'))
+            ]),
+            ('mov', 'dat', 'acc')
+        ]
+        cpu = parts.CPU
+        result = cpu.compile("""
+          mov 1 acc     # Comments don't matter.
+          teq acc 1     ; I'll add semicolons, too.
+        + mov 2 acc     ; You know, just for fun.
+        - mov 0 acc
+        + mov 1 dat
+          mov dat acc
+        """)
+        self.assertEqual(expected, result)
+
+    def test_execute_bad_register(self):
+        mc = parts.Microcontroller(name='mc1', dats=0)
+        with self.assertRaises(x.RegisterException):
+            mc.execute('mov 1 dat')
+
+    def test_test_instructions(self):
+        code = """
+          teq acc 2
+        + mov 1 acc
+        - mov 3 acc
+        """
+        mc = parts.Microcontroller(name='mc1')
+        mc.execute(code)
+        self.assertEqual(3, mc.acc)
+        mc.register('acc').write(2)
+        self.assertEqual(2, mc.acc)
+        mc.execute(code)
+        self.assertEqual(1, mc.acc)
+
+    def test_cp(self):
+        code = """
+          tcp acc 2
+        + mov 1 acc
+        - mov 3 acc
+        """
+        mc = parts.Microcontroller()
+        mc.execute(code)
+        self.assertEqual(3, mc.acc)
+        mc.register('acc').write(3)
+        mc.execute(code)
+        self.assertEqual(1, mc.acc)
+        mc.execute(code)
+        self.assertEqual(3, mc.acc)
+        mc.register('acc').write(2)
+        mc.execute(code)
+        self.assertEqual(2, mc.acc)
+
+    def test_lt(self):
+        code = """
+          tlt acc 2
+        + mov 1 acc
+        - mov 3 acc
+        """
+        mc = parts.Microcontroller()
+        mc.execute(code)
+        self.assertEqual(1, mc.acc)
+        mc.register('acc').write(2)
+        mc.execute(code)
+        self.assertEqual(3, mc.acc)
+
+    def test_gt(self):
+        code = """
+          tgt acc 2
+        + mov 3 acc
+        - mov 1 acc
+        """
+        mc = parts.Microcontroller()
+        mc.execute(code)
+        self.assertEqual(1, mc.acc)
+        mc.register('acc').write(2)
+        mc.execute(code)
+        self.assertEqual(1, mc.acc)

@@ -99,12 +99,7 @@ class Microcontroller():
             self._registers['dat'] = self._registers['dat0']
 
     def execute(self, code):
-        lines = code.split('\n')
-        for l in lines:
-            self._run_line(l.strip())
-
-    def _run_line(self, line):
-        CPU.execute(self, line)
+        CPU.execute(self, code)
 
     @property
     def name(self):
@@ -249,15 +244,60 @@ class Interface():
 
 class CPU():
 
-    def execute(self, mc, line):
-        if line[0] == "#":
-            return
-        words = line.split(' ')
-        command = words.pop(0)
-        meth = getattr(self, 'do_'+command, None)
-        if meth:
-            return meth(mc, *words)
-        raise x.CommandException("Invalid instruction: "+command)
+    def execute(self, mc, code):
+        if isinstance(code, str):
+            insts = self.compile(code)
+        else:
+            insts = code
+        for i in insts:
+            command = i[0]
+            meth = getattr(self, 'do_'+command.lower(), None)
+            if meth:
+                meth(mc, *i[1:])
+            else:
+                raise x.CommandException("Invalid instruction: "+command)
+
+    def compile(self, lines):
+        if isinstance(lines, str):
+            lines = lines.split("\n")
+        ast = []
+        if len(lines) == 0:
+            return ast
+        l = lines.pop(0)
+        l = l.split(';')[0]  # Strip comments and whitespace.
+        l = l.split('#')[0]
+        l = l.strip()
+        if l and l[0] not in '#;':
+            if l[0] == 't':
+                insts = []
+                while len(lines) > 0:
+                    test = l[1:]
+                    n = lines.pop(0).strip()
+                    if n and n[0] == '+':
+                        insts.append((True, self.compile(n[1:])[0]))
+                    elif n and n[0] == '-':
+                        insts.append((False, self.compile(n[1:])[0]))
+                    else:
+                        # Put the last one back.
+                        lines.insert(0, n)
+                        node = ('TEST', self.compile(test)[0], insts)
+                        ast.append(node)
+                        break
+            else:
+                ast.append(tuple(l.split(' ')))
+        return ast + self.compile(lines)
+
+    def do_test(self, mc, comp, nodes):
+        comparison = comp[0]
+        meth = getattr(self, 'test_'+comparison, None)
+        if meth is None:
+            raise x.CommandException("Invalid comparison: "+comparison)
+        a = mc.value(comp[1])
+        b = mc.value(comp[2])
+        plus, minus = meth(a, b)  # Execute + or -.
+        for n in nodes:
+            if n[0] == True and plus or n[0] == False and minus:
+                self.execute(mc, [n[1]])
 
     def do_add(self, mc, a):
         a = mc.value(a)
@@ -273,6 +313,18 @@ class CPU():
         if r2 is None:
             raise x.RegisterException("Invalid register: "+b)
         r2.write(a)
+
+    def test_eq(self, a, b):
+        return (a == b, a != b)
+
+    def test_cp(self, a, b):
+        return (a > b, a < b)
+
+    def test_lt(self, a, b):
+        return (a < b, not(a < b))
+
+    def test_gt(self, a, b):
+        return (a > b, not(a > b))
 
 
 CPU = CPU()  # Singleton is the only design pattern I know.
