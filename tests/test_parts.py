@@ -139,3 +139,16 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(6, d0.read())
         self.assertEqual(7, d1.read())
         self.assertEqual(8, d2.read())
+
+    def test_mov(self):
+        mc1 = parts.Microcontroller(name='mc1', dats=1)
+        acc = mc1.register('acc')
+        dat = mc1.register('dat')
+        acc.write(42)
+        mc1.execute('mov acc dat')
+        self.assertEqual(42, dat.read())
+        self.assertEqual(42, acc.read())
+        dat.write(12)
+        mc1.execute('mov dat acc')
+        self.assertEqual(12, acc.read())
+        self.assertEqual(12, dat.read())

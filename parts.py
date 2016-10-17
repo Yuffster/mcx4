@@ -267,5 +267,15 @@ class CPU():
         a = int(a)
         mc.register('acc').write(mc.acc - a)
 
+    def do_mov(self, mc, a, b):
+        r1 = mc.interface(a)
+        r2 = mc.interface(b)
+        if r1 is not None:
+            a = r1.read()
+        a = int(a)
+        if r2 is None:
+            raise x.RegisterException("Invalid register: "+b)
+        r2.write(a)
+
 
 CPU = CPU()  # Singleton is the only design pattern I know.
