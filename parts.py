@@ -15,6 +15,8 @@ class Microcontroller():
 
     _part_count = 0  # static
 
+    _cpu = None  # CPU
+
     def __init__(self, name=None, gpio=None, xbus=None, dats=None):
         self._pnums = {'p':self._gpios, 'x':self._xbuses}
         if gpio is not None:
@@ -30,6 +32,7 @@ class Microcontroller():
         Microcontroller._part_count += 1
         self._initialize_registers()
         self._ports = {'p':{}, 'x':{}}
+        self._cpu = CPU(self)
 
     def __getattr__(self, name):
         reg = self.interface(name)
@@ -99,7 +102,7 @@ class Microcontroller():
             self._registers['dat'] = self._registers['dat0']
 
     def execute(self, code):
-        CPU.execute(self, code)
+        self._cpu.execute(code)
 
     @property
     def name(self):
@@ -244,75 +247,117 @@ class Interface():
 
 class CPU():
 
-    def execute(self, mc, code):
-        if isinstance(code, str):
-            insts = self.compile(code)
+    _insts = None  # []
+    _mc = None  # Microcontroller
+    _exec_plus = False  # Whether or not to execute +.
+    _exec_minus = False  # Whether or not to execute -.
+
+    def __init__(self, mc=None):
+        self._mc = mc
+        self.reset()
+
+    def reset(self):
+        self._insts = []
+        self._exec_plus = False
+        self._exec_minus = False
+
+    def execute(self, code):
+        if isinstance(code, tuple):
+            self._insts = [code]
+        elif isinstance(code, list):
+            self._insts = code
         else:
-            insts = code
-        for i in insts:
-            command = i[0]
-            meth = getattr(self, 'do_'+command.lower(), None)
-            if meth:
-                meth(mc, *i[1:])
-            else:
-                raise x.CommandException("Invalid instruction: "+command)
+            self._insts = self.compile(code)
+        for i in self._insts:
+            self.exec_inst(i)
 
-    def compile(self, lines):
-        if isinstance(lines, str):
-            lines = lines.split("\n")
-        ast = []
-        if len(lines) == 0:
-            return ast
-        l = lines.pop(0)
-        l = l.split(';')[0]  # Strip comments and whitespace.
-        l = l.split('#')[0]
-        l = l.strip()
-        if l and l[0] not in '#;':
-            if l[0] == 't':
-                insts = []
-                while len(lines) > 0:
-                    test = l[1:]
-                    n = lines.pop(0).strip()
-                    if n and n[0] == '+':
-                        insts.append((True, self.compile(n[1:])[0]))
-                    elif n and n[0] == '-':
-                        insts.append((False, self.compile(n[1:])[0]))
-                    else:
-                        # Put the last one back.
-                        lines.insert(0, n)
-                        node = ('TEST', self.compile(test)[0], insts)
-                        ast.append(node)
-                        break
-            else:
-                ast.append(tuple(l.split(' ')))
-        return ast + self.compile(lines)
+    def exec_inst(self, inst):
+        """
+        Executes one instruction.
+        """
+        command = inst[0]
+        meth = getattr(self, 'do_'+command.lower(), None)
+        if meth:
+            meth(*inst[1:])
+        else:
+            raise x.CommandException("Invalid instruction: "+command)
 
-    def do_test(self, mc, comp, nodes):
-        comparison = comp[0]
-        meth = getattr(self, 'test_'+comparison, None)
-        if meth is None:
-            raise x.CommandException("Invalid comparison: "+comparison)
-        a = mc.value(comp[1])
-        b = mc.value(comp[2])
-        plus, minus = meth(a, b)  # Execute + or -.
-        for n in nodes:
-            if n[0] == True and plus or n[0] == False and minus:
-                self.execute(mc, [n[1]])
+    def compile(self, code):
+        """
+        Compiles a string of code into a list of tuple instructions.
 
-    def do_add(self, mc, a):
-        a = mc.value(a)
-        mc.register('acc').write(mc.acc + a)
+        Code looks like:
 
-    def do_sub(self, mc, a):
-        a = mc.value(a)
-        mc.register('acc').write(mc.acc - a)
+              teq p0 p1
+            + mov p0 p1      ; This is a comment.
+            - mov 100 p0     # This is a comment.
+              add p0
 
-    def do_mov(self, mc, a, b):
-        a = mc.value(a)
-        r2 = mc.interface(b)
+        Compiled looks like:
+
+            [
+                ('test', 'eq', ('p0', 'p1')),
+                ('cond', True, ('mov', 'p0', 'p1')),
+                ('cond', False, ('mov', '100', 'p0')),
+                ('add', 'p0')
+            ]
+
+        """
+        out = []
+        lines = code.split('\n')
+        for l in lines:
+            l = l.split(';')[0]  # Strip comments and whitespace.
+            l = l.split('#')[0]
+            l = l.strip()
+            if l == '':
+                continue
+            inst = tuple(l.split(' '))
+            if inst[0] == '+':
+                inst = ('cond', True, inst[1:])
+            if inst[0] == '-':
+                inst = ('cond', False, inst[1:])
+            if inst[0][0] == 't':
+                inst = ('test', inst[0][1:], inst[1:])
+            out.append(inst)
+        return out
+
+    def do_add(self, a):
+        a = self._mc.value(a)
+        self._mc.register('acc').write(self._mc.acc + a)
+
+    def do_sub(self, a):
+        a = self._mc.value(a)
+        self._mc.register('acc').write(self._mc.acc - a)
+
+    def do_mov(self, a, b):
+        a = self._mc.value(a)
+        r2 = self._mc.interface(b)
         if r2 is None:
             raise x.RegisterException("Invalid register: "+b)
         r2.write(a)
+
+    def do_not(self):
+        acc = self._mc.acc
+        if acc.read() == 0:
+            acc.write(100)
+        else:
+            acc.write(0)
+
+    def do_test(self, comp, args):
+        meth = getattr(self, 'test_'+comp, None)
+        if meth is None:
+            raise x.CommandException("Invalid comparison: "+comp)
+        a = self._mc.value(args[0])
+        b = self._mc.value(args[1])
+        plus, minus = meth(a, b)  # Execute + or -.
+        self._exec_plus = plus
+        self._exec_minus = minus
+
+    def do_cond(self, plus, inst):
+        if plus and self._exec_plus:
+            self.execute(inst)
+        elif plus is False and self._exec_minus:
+            self.execute(inst)
 
     def test_eq(self, a, b):
         return (a == b, a != b)
@@ -325,6 +370,3 @@ class CPU():
 
     def test_gt(self, a, b):
         return (a > b, not(a > b))
-
-
-CPU = CPU()  # Singleton is the only design pattern I know.

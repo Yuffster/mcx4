@@ -157,14 +157,13 @@ class MicrocontrollerTestCase(unittest.TestCase):
     def test_compiler(self):
         expected = [
             ('mov', '1', 'acc'),
-            ('TEST', ('eq', 'acc', '1'), [
-                (True, ('mov', '2', 'acc')),
-                (False, ('mov', '0', 'acc')),
-                (True, ('mov', '1', 'dat'))
-            ]),
+            ('test', 'eq', ('acc', '1')),
+            ('cond', True, ('mov', '2', 'acc')),
+            ('cond', False, ('mov', '0', 'acc')),
+            ('cond', True, ('mov', '1', 'dat')),
             ('mov', 'dat', 'acc')
         ]
-        cpu = parts.CPU
+        cpu = parts.CPU()
         result = cpu.compile("""
           mov 1 acc     # Comments don't matter.
           teq acc 1     ; I'll add semicolons, too.
