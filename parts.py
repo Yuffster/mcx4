@@ -94,11 +94,11 @@ class Microcontroller():
 
     def _initialize_registers(self):
         self._registers = {}
-        self._registers['acc'] = Interface(self, 'acc')
-        self._registers['null'] = NullInterface(self, 'null')
+        self._registers['acc'] = Register(self, 'acc')
+        self._registers['null'] = NullRegister(self, 'null')
         for n in range(0, self._dats):
             name = "dat{}".format(n)
-            self._registers[name] = Interface(self, name)
+            self._registers[name] = Register(self, name)
         if self._dats > 0:
             # Handy alias when there's only one dat register.
             self._registers['dat'] = self._registers['dat0']
@@ -116,7 +116,7 @@ class Microcontroller():
         return acc.read()
 
 
-class Port():
+class Interface():
 
     _parent = None  # Microcontroller
     _output = 0  # Output buffer.
@@ -140,7 +140,7 @@ class Port():
         return self._circuit.max_value(self)
 
     def link(self, port):
-        if not isinstance(port, Port):
+        if not isinstance(port, Interface):
             raise TypeError("Invalid port type: "+port.__class__.__name__)
         c = port._circuit
         if c is None:
@@ -166,7 +166,7 @@ class Port():
         return self.parent.name+"."+self._name
 
 
-class GPIO(Port):
+class GPIO(Interface):
 
     def write(self, val):
         """
@@ -180,13 +180,13 @@ class GPIO(Port):
         self._output = val
 
 
-class XBUS(Port):
+class XBUS(Interface):
     pass
 
 
 class Circuit():
 
-    _attached = None  # [Port, Port]
+    _attached = None  # [Interface, Interface]
 
     def __init__(self):
         self._attached = []
@@ -214,7 +214,7 @@ class Circuit():
         for p in self._attached:
             if not isinstance(port, p.__class__):
                 raise x.PortCompatException(
-                    "Incompatible ports: {} / {}"
+                    "Incompatible interfaces: {} / {}"
                     .format(self.__class__, port.__class__)
                 )
             if p.parent == port.parent:
@@ -224,7 +224,7 @@ class Circuit():
             )
 
 
-class Interface():
+class Register():
 
     _val = 0
     _name = ''
@@ -246,7 +246,7 @@ class Interface():
     def dec(self, n=1):
         self._val -= n
 
-class NullInterface(Interface):
+class NullRegister(Register):
 
     """
     Supports read and write, but always returns 0.

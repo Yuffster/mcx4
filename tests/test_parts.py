@@ -117,7 +117,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         d0 = mc.dat0
         dat = mc.dat
         self.assertEqual(d0, dat)
-        self.assertIsInstance(d0, parts.Interface)
+        self.assertIsInstance(d0, parts.Register)
         d0.write(5)
         self.assertEqual(5, d0.read())
         with self.assertRaises(x.RegisterException):
