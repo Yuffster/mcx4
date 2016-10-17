@@ -356,14 +356,46 @@ class CPU():
         a = self._mc.value(a)
         self._mc.register('acc').write(self._mc.acc + a)
 
+    def do_sub(self, a):
+        a = self._mc.value(a)
+        self._mc.register('acc').write(self._mc.acc - a)
+
     def do_mul(self, a):
         a = self._mc.value(a)
         acc = self._mc.register('acc')
         acc.write(acc.read()*a)
 
-    def do_sub(self, a):
-        a = self._mc.value(a)
-        self._mc.register('acc').write(self._mc.acc - a)
+    def do_dgt(self, bit):
+        """
+        Rewrite ACC with one isolated digit.
+
+        Decimal little-endian.
+        """
+        bit = self._mc.value(bit)
+        acc = self._mc.register('acc')
+        val = str(acc.read())[::-1]
+        if len(val) > bit:
+            acc.write(val[bit])
+        else:
+            acc.write(0)
+
+    def do_dst(self, bit, val):
+        """
+        Set ACC digit to the least significant digit of the provided
+        value.  Decimal little-endian.
+        """
+        bit = self._mc.value(bit)
+        bit = int(str(bit)[-1])  # Least significant digit.
+        val = self._mc.value(val)
+        val = str(val)[-1]  # Least significant digit.
+        acc = self._mc.register('acc')
+        new = list(str(acc.read())[::-1])
+        if len(new) > bit:
+            new[bit] = val
+            new = str(''.join(new[::-1]))
+        else:
+            new = 0
+        acc.write(new)
 
     def do_mov(self, a, b):
         a = self._mc.value(a)

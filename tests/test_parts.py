@@ -109,6 +109,36 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc.execute('mul 5')
         self.assertEqual(10, mc.acc)
 
+    def test_dgt(self):
+        mc = parts.Microcontroller()
+        mc.register('acc').write(567)
+        mc.execute('dgt 0')
+        self.assertEqual(7, mc.acc)
+        mc.register('acc').write(567)
+        mc.execute('dgt 1')
+        self.assertEqual(6, mc.acc)
+        mc.register('acc').write(567)
+        mc.execute('dgt 2')
+        self.assertEqual(5, mc.acc)
+        mc.register('acc').write(567)
+        mc.execute('dgt 3')
+        self.assertEqual(0, mc.acc)
+
+    def test_dst(self):
+        mc = parts.Microcontroller()
+        mc.register('acc').write(567)
+        mc.execute('dst 0 9')
+        self.assertEqual(569, mc.acc)
+        mc.register('acc').write(567)
+        mc.execute('dst 1 9')
+        self.assertEqual(597, mc.acc)
+        mc.register('acc').write(567)
+        mc.execute('dst 2 9')
+        self.assertEqual(967, mc.acc)
+        mc.register('acc').write(567)
+        mc.execute('dst 3 9')
+        self.assertEqual(0, mc.acc)
+
     def test_acc_register(self):
         mc1 = parts.Microcontroller(name='mc1', gpio=1)
         acc = mc1.register('acc')
