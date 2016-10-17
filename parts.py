@@ -251,6 +251,8 @@ class CPU():
     _mc = None  # Microcontroller
     _exec_plus = False  # Whether or not to execute +.
     _exec_minus = False  # Whether or not to execute -.
+    _cursor = 0
+    _labels = None  # {label:inst_num}
 
     def __init__(self, mc=None):
         self._mc = mc
@@ -260,16 +262,24 @@ class CPU():
         self._insts = []
         self._exec_plus = False
         self._exec_minus = False
+        self._cursor = 0
+        self._labels = {}
 
     def execute(self, code):
+        self.reset()
         if isinstance(code, tuple):
             self._insts = [code]
         elif isinstance(code, list):
             self._insts = code
         else:
-            self._insts = self.compile(code)
-        for i in self._insts:
-            self.exec_inst(i)
+            self.compile(code)
+        while self._cursor < len(self._insts):
+            c = self.exec_inst(self._insts[self._cursor])
+            if c is not None:
+                self._cursor = c
+            else:
+                self._cursor += 1
+        self._cursor = 0
 
     def exec_inst(self, inst):
         """
@@ -278,7 +288,7 @@ class CPU():
         command = inst[0]
         meth = getattr(self, 'do_'+command.lower(), None)
         if meth:
-            meth(*inst[1:])
+            return meth(*inst[1:])
         else:
             raise x.CommandException("Invalid instruction: "+command)
 
@@ -305,12 +315,21 @@ class CPU():
         """
         out = []
         lines = code.split('\n')
+        i = 0  # Instruction number (lines can be null and don't count)
         for l in lines:
+            if ':' in l:  # Record and strip labels.
+                label = l.split(':')
+                self._labels[label[0].strip()] = i
+                if len(label) == 2:
+                    l = label[1]
+                else:
+                    l = ''
             l = l.split(';')[0]  # Strip comments and whitespace.
             l = l.split('#')[0]
             l = l.strip()
             if l == '':
                 continue
+            i += i  # Increment the instruction number.
             inst = tuple(l.split(' '))
             if inst[0] == '+':
                 inst = ('cond', True, inst[1:])
@@ -319,7 +338,8 @@ class CPU():
             if inst[0][0] == 't':
                 inst = ('test', inst[0][1:], inst[1:])
             out.append(inst)
-        return out
+        self._insts = out
+        return out  # Only used for testing.
 
     def do_add(self, a):
         a = self._mc.value(a)
@@ -343,6 +363,11 @@ class CPU():
         else:
             acc.write(0)
 
+    def do_jmp(self, label):
+        if label not in self._labels:
+            raise x.LabelException("Label not found: "+label)
+        return self._labels[label]
+
     def do_test(self, comp, args):
         meth = getattr(self, 'test_'+comp, None)
         if meth is None:
@@ -355,9 +380,9 @@ class CPU():
 
     def do_cond(self, plus, inst):
         if plus and self._exec_plus:
-            self.execute(inst)
+            return self.exec_inst(inst)
         elif plus is False and self._exec_minus:
-            self.execute(inst)
+            return self.exec_inst(inst)
 
     def test_eq(self, a, b):
         return (a == b, a != b)

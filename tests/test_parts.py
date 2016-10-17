@@ -252,3 +252,23 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(10, mc2.acc)
         mc2.execute(c2)
         self.assertEqual(20, mc2.acc)
+
+    def test_jump(self):
+        code = """
+        a:add 1
+          teq acc 5
+        - jmp a
+        """
+        mc = parts.Microcontroller()
+        mc.execute(code)
+        self.assertEqual(5, mc.acc)
+
+        code = """
+        a:
+          add 1
+          teq acc 5
+        - jmp a
+        """
+        mc = parts.Microcontroller()
+        mc.execute(code)
+        self.assertEqual(5, mc.acc)
