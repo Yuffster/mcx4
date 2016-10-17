@@ -37,6 +37,12 @@ class Microcontroller():
             return reg
         raise(AttributeError("Invalid attribute: {}".format(name)))
 
+    def value(self, val):
+        reg = self.interface(val)
+        if reg:
+            return reg.read()
+        return int(val)
+
     def interface(self, name):
         name = name.lower()
         try:
@@ -254,25 +260,16 @@ class CPU():
         raise x.CommandException("Invalid instruction: "+command)
 
     def do_add(self, mc, a):
-        r1 = mc.interface(a)
-        if r1 is not None:
-            a = r1.read()
-        a = int(a)
+        a = mc.value(a)
         mc.register('acc').write(mc.acc + a)
 
     def do_sub(self, mc, a):
-        r1 = mc.interface(a)
-        if r1 is not None:
-            a = r1.read()
-        a = int(a)
+        a = mc.value(a)
         mc.register('acc').write(mc.acc - a)
 
     def do_mov(self, mc, a, b):
-        r1 = mc.interface(a)
+        a = mc.value(a)
         r2 = mc.interface(b)
-        if r1 is not None:
-            a = r1.read()
-        a = int(a)
         if r2 is None:
             raise x.RegisterException("Invalid register: "+b)
         r2.write(a)
