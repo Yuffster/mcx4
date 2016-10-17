@@ -272,3 +272,12 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc = parts.Microcontroller()
         mc.execute(code)
         self.assertEqual(5, mc.acc)
+
+    def test_not(self):
+        mc = parts.Microcontroller()
+        self.assertEqual(0, mc.acc)
+        mc.execute("not")
+        self.assertEqual(100, mc.acc)
+        mc.register('acc').write('-999')
+        mc.execute("not")
+        self.assertEqual(0, mc.acc)

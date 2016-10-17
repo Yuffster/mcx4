@@ -357,7 +357,7 @@ class CPU():
         r2.write(a)
 
     def do_not(self):
-        acc = self._mc.acc
+        acc = self._mc.register('acc')
         if acc.read() == 0:
             acc.write(100)
         else:
