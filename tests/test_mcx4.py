@@ -355,3 +355,15 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc2.step()
         mc1.step()
         self.assertEqual(1, mc1.acc)
+
+    def test_doc_examples(self):
+        mc1 = MC4000()
+        mc2 = MC6000()
+
+        mc1.p0.link(mc2.p1)  # Link the ports.
+        mc1.p0.read()  # 0
+        mc2.p1.read()  # 0
+
+        mc1.p0.write(100)
+        self.assertEqual(0, mc1.p0.read())
+        self.assertEqual(100, mc2.p1.read())
