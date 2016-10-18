@@ -104,7 +104,24 @@ class Microcontroller():
             self._registers['dat'] = self._registers['dat0']
 
     def execute(self, code):
+        """
+        Compile and immediately execute code in one go.
+        """
         self._cpu.execute(code)
+
+    def compile(self, code):
+        """
+        Load code into the CPU.
+
+        Replaces existing code.
+        """
+        self._cpu.compile(code)
+
+    def step(self):
+        """
+        Execute the next instruction.
+        """
+        self._cpu.step()
 
     @property
     def name(self):
@@ -277,6 +294,11 @@ class CPU():
         self._labels = {}
 
     def execute(self, code):
+        """
+        Runs through the code once without looping.
+
+        Resets all the state stuff before it starts.
+        """
         self.reset()
         if isinstance(code, tuple):
             self._insts = [code]
@@ -285,16 +307,33 @@ class CPU():
         else:
             self.compile(code)
         while self._cursor < len(self._insts):
-            c = self.exec_inst(self._insts[self._cursor])
-            if c is not None:
-                self._cursor = c
-            else:
-                self._cursor += 1
+            self.step(loop=False)
         self._cursor = 0
+
+    def step(self, loop=True):
+        """
+        Execute the next instruction.
+
+        If a cursor is returned, e.g. after a jump, the cursor will be
+        updated to that value.  Otherwise, the cursor will be incremented.
+
+        Cursor will be reset to 0 after all instructions are complete,
+        so stepping will loop the execution, unless loop is set to False.
+        """
+        c = self.exec_inst(self._insts[self._cursor])
+        if c is not None:
+            self._cursor = c
+        else:
+            self._cursor += 1
+        # Start over if we're done.
+        if loop and self._cursor == len(self._insts):
+            self._cursor = 0
 
     def exec_inst(self, inst):
         """
-        Executes one instruction.
+        Executes a given compiled instruction.
+
+        Returns the new cursor in case of a jump.
         """
         command = inst[0]
         meth = getattr(self, 'do_'+command.lower(), None)
@@ -306,6 +345,10 @@ class CPU():
     def compile(self, code):
         """
         Compiles a string of code into a list of tuple instructions.
+
+        Replaces any current instruction set with this one.
+
+        Doesn't reset registers.
 
         Code looks like:
 

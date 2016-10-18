@@ -337,3 +337,17 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc = parts.Microcontroller()
         mc.execute(code)
         self.assertEqual(5, mc.acc)
+
+    def test_io_stepping(self):
+        mc1 = parts.Microcontroller('mc1', gpio=1)
+        mc1.compile("""
+            mov p0 acc
+        """)
+        mc2 = parts.Microcontroller('mc2', gpio=2)
+        mc2.compile("""
+            mov 1 p1
+        """)
+        mc1.p0.link(mc2.p1)
+        mc2.step()
+        mc1.step()
+        self.assertEqual(1, mc1.acc)
