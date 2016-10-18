@@ -74,24 +74,36 @@ class MicrocontrollerTestCase(unittest.TestCase):
         p0b.link(p1)
         self.assertEqual(p0b._circuit, p1._circuit)
 
+    def test_reset_gpio_on_read(self):
+        p0 = self.mc.p0
+        p1 = Microcontroller(gpio=2).p1
+        p0.link(p1)
+        p0.write(100)
+        self.assertEqual(100, p1.read())
+        p0.read()
+        self.assertEqual(0, p1.read())
+
     def test_gpio_read_write(self):
         mc1 = Microcontroller(name="mc1", gpio=1)
         mc2 = Microcontroller(name="mc2", gpio=1)
         mc3 = Microcontroller(name="mc3", gpio=1)
         mc1.p0.link(mc2.p0)
         mc1.p0.write(100)
-        mc2.p0.write(50)
         self.assertEqual(100, mc2.p0.read())
+        mc2.p0.write(50)
         self.assertEqual(50, mc1.p0.read())
         mc1.p0.write(0)
         mc1.p0.link(mc3.p0)
         self.assertEqual(0, mc2.p0.read())
+        mc2.p0.write(50)
         mc3.p0.write(22)
         self.assertEqual(22, mc2.p0.read())
+        mc2.p0.write(50)
         self.assertEqual(50, mc3.p0.read())
         mc3.p0.unlink()
         self.assertEqual(0, mc2.p0.read())
         mc3.p0.link(mc1.p0)
+        mc3.p0.write(22)
         self.assertEqual(22, mc2.p0.read())
 
     def test_add_and_sub(self):
@@ -361,9 +373,19 @@ class MicrocontrollerTestCase(unittest.TestCase):
         mc2 = MC6000()
 
         mc1.p0.link(mc2.p1)  # Link the ports.
-        mc1.p0.read()  # 0
-        mc2.p1.read()  # 0
+        self.assertEqual(0, mc1.p0.read())
+        self.assertEqual(0, mc2.p1.read())
+
+        mc1.p0.write(100)
+        self.assertEqual(100, mc2.p1.read())
+
+        mc1 = MC4000()
+        mc2 = MC6000()
+
+        mc1.p0.link(mc2.p1)  # Link the ports.
+        self.assertEqual(0, mc1.p0.read())
+        self.assertEqual(0, mc2.p1.read())
 
         mc1.p0.write(100)
         self.assertEqual(0, mc1.p0.read())
-        self.assertEqual(100, mc2.p1.read())
+        self.assertEqual(0, mc2.p1.read())

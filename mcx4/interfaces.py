@@ -19,6 +19,7 @@ class Interface():
         """
         Returns the maximum output of all attached ports.
         """
+        self._output = 0
         if self._circuit is None:
             return 0
         return self._circuit.max_value(self)
@@ -88,8 +89,7 @@ class Circuit():
     def max_value(self, exclude=None):
         out = []
         for p in self._attached:
-            if p != exclude:
-                out.append(p.output)
+            out.append(p.output)
         if len(out) > 0:
             return max(out)
         return 0

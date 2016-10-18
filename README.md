@@ -23,13 +23,25 @@ Port interfaces have a `link` method which will attach them through a circuit to
 
 Additionally, all interfaces and registers have a `read` and `write` method to access and modify their respective values.
 
-### Note
+When a port is read, the maximum value of all linked ports will be returned.
 
-Ports maintain a distinction between input and output.  As such, it is not possible to write to a port and read from the same port to obtain the same value.
+Ports cannot be connected to any ports within the same processor.
 
-When a port is read, the maximum value of all linked ports, *excluding* the one being read, will be returned.
+```python
+from mcx4 import MC4000
 
-Please note that ports cannot be connected to any ports within the same processor.
+mc1 = MC4000()
+mc2 = MC6000()
+
+mc1.p0.link(mc2.p1)  # Link the ports.
+mc1.p0.read()  # 0
+mc2.p1.read()  # 0
+
+mc1.p0.write(100)
+mc2.p1.read()  # 100
+```
+
+Reading from a port will reset its output value to 0.
 
 ```python
 from mcx4 import MC4000
@@ -43,7 +55,7 @@ mc2.p1.read()  # 0
 
 mc1.p0.write(100)
 mc1.p0.read()  # 0
-mc2.p1.read()  # 100
+mc2.p0.read()  # 0
 ```
 
 ## Instruction Execution
