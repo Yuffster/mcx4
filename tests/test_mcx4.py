@@ -1,31 +1,35 @@
 import unittest
-from mcx4 import parts
+
+from mcx4.microcontrollers import Microcontroller, MC4000, MC6000
+from mcx4.interfaces import GPIO, XBUS, Register, Interface
+from mcx4.cpus import CPU
+
 import mcx4.exceptions as x
 
 class MicrocontrollerTestCase(unittest.TestCase):
 
     def setUp(self):
-        parts.Microcontroller._part_count = 0
-        self.mc = parts.Microcontroller(gpio=2, xbus=3)
+        Microcontroller._part_count = 0
+        self.mc = Microcontroller(gpio=2, xbus=3)
 
     def test_get_port_gpio(self):
         p0 = self.mc.get_port('p0')
         p1 = self.mc.get_port('p1')
-        self.assertIsInstance(p0, parts.GPIO)
-        self.assertIsInstance(p1, parts.GPIO)
+        self.assertIsInstance(p0, GPIO)
+        self.assertIsInstance(p1, GPIO)
         self.assertEqual(self.mc.get_port('p0'), p0)
         self.assertNotEqual(p1, p0)
         with self.assertRaises(x.PortException):
             self.mc.get_port('p2')
 
     def test_get_port_xbus(self):
-        mc = parts.Microcontroller(xbus=3)
+        mc = Microcontroller(xbus=3)
         x0 = mc.get_port('x0')
         x1 = mc.get_port('x1')
         x2 = mc.get_port('x2')
-        self.assertIsInstance(x0, parts.XBUS)
-        self.assertIsInstance(x1, parts.XBUS)
-        self.assertIsInstance(x2, parts.XBUS)
+        self.assertIsInstance(x0, XBUS)
+        self.assertIsInstance(x1, XBUS)
+        self.assertIsInstance(x2, XBUS)
         self.assertEqual(x0, mc.get_port('x0'))
         self.assertEqual(x1, mc.get_port('x1'))
         self.assertEqual(x2, mc.get_port('x2'))
@@ -46,8 +50,8 @@ class MicrocontrollerTestCase(unittest.TestCase):
             self.mc.p0.link(self.mc)
 
     def test_get_port_shorthand(self):
-        self.assertIsInstance(self.mc.p1, parts.GPIO)
-        self.assertIsInstance(self.mc.x0, parts.XBUS)
+        self.assertIsInstance(self.mc.p1, GPIO)
+        self.assertIsInstance(self.mc.x0, XBUS)
         with self.assertRaises(x.PortException):
             self.mc.x10
         with self.assertRaises(AttributeError):
@@ -57,7 +61,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         p0 = self.mc.p0
         p1 = self.mc.p1
         x0 = self.mc.x0
-        mc2 = parts.Microcontroller(name="mc2", gpio=1)
+        mc2 = Microcontroller(name="mc2", gpio=1)
         p0b = mc2.p0
         with self.assertRaises(x.PortSelfLinkException):
             p0.link(p1)
@@ -71,9 +75,9 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(p0b._circuit, p1._circuit)
 
     def test_gpio_read_write(self):
-        mc1 = parts.Microcontroller(name="mc1", gpio=1)
-        mc2 = parts.Microcontroller(name="mc2", gpio=1)
-        mc3 = parts.Microcontroller(name="mc3", gpio=1)
+        mc1 = Microcontroller(name="mc1", gpio=1)
+        mc2 = Microcontroller(name="mc2", gpio=1)
+        mc3 = Microcontroller(name="mc3", gpio=1)
         mc1.p0.link(mc2.p0)
         mc1.p0.write(100)
         mc2.p0.write(50)
@@ -91,7 +95,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(22, mc2.p0.read())
 
     def test_add_and_sub(self):
-        mc1 = parts.Microcontroller(name="mc1", gpio=1)
+        mc1 = Microcontroller(name="mc1", gpio=1)
         mc1.execute('add 1')
         self.assertEqual(1, mc1.acc)
         mc1.execute('add 1')
@@ -104,13 +108,13 @@ class MicrocontrollerTestCase(unittest.TestCase):
             mc1.execute('lawl')
 
     def test_mul(self):
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.register('acc').write(2)
         mc.execute('mul 5')
         self.assertEqual(10, mc.acc)
 
     def test_not(self):
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         self.assertEqual(0, mc.acc)
         mc.execute("not")
         self.assertEqual(100, mc.acc)
@@ -119,7 +123,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(0, mc.acc)
 
     def test_dgt(self):
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.register('acc').write(567)
         mc.execute('dgt 0')
         self.assertEqual(7, mc.acc)
@@ -134,7 +138,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(0, mc.acc)
 
     def test_dst(self):
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.register('acc').write(567)
         mc.execute('dst 0 9')
         self.assertEqual(569, mc.acc)
@@ -149,11 +153,11 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(0, mc.acc)
 
     def test_nop(self):
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute("nop")
 
     def test_acc_register(self):
-        mc1 = parts.Microcontroller(name='mc1', gpio=1)
+        mc1 = Microcontroller(name='mc1', gpio=1)
         acc = mc1.register('acc')
         self.assertEqual(0, acc.read())
         self.assertEqual(0, mc1.acc)
@@ -162,24 +166,24 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(1, mc1.acc)
 
     def test_dat_registers(self):
-        mc = parts.Microcontroller(name='mc1', dats=1)
+        mc = Microcontroller(name='mc1', dats=1)
         d0 = mc.dat0
         dat = mc.dat
         self.assertEqual(d0, dat)
-        self.assertIsInstance(d0, parts.Register)
+        self.assertIsInstance(d0, Register)
         d0.write(5)
         self.assertEqual(5, d0.read())
         with self.assertRaises(x.RegisterException):
             mc.register('d1')
 
     def test_null_register(self):
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         n = mc.register('null')
         n.write(100)
         self.assertEqual(0, n.read())
 
     def test_register_independence(self):
-        mc = parts.Microcontroller(name='mc1', dats=3)
+        mc = Microcontroller(name='mc1', dats=3)
         d0 = mc.dat0
         d1 = mc.dat1
         d2 = mc.dat2
@@ -197,7 +201,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(8, d2.read())
 
     def test_mov(self):
-        mc1 = parts.Microcontroller(name='mc1', dats=1)
+        mc1 = Microcontroller(name='mc1', dats=1)
         acc = mc1.register('acc')
         dat = mc1.register('dat')
         acc.write(42)
@@ -218,7 +222,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
             ('cond', True, ('mov', '1', 'dat')),
             ('mov', 'dat', 'acc')
         ]
-        cpu = parts.CPU()
+        cpu = CPU()
         result = cpu.compile("""
           mov 1 acc     # Comments don't matter.
           teq acc 1     ; I'll add semicolons, too.
@@ -230,7 +234,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_execute_bad_register(self):
-        mc = parts.Microcontroller(name='mc1', dats=0)
+        mc = Microcontroller(name='mc1', dats=0)
         with self.assertRaises(x.RegisterException):
             mc.execute('mov 1 dat')
 
@@ -240,7 +244,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         + mov 1 acc
         - mov 3 acc
         """
-        mc = parts.Microcontroller(name='mc1')
+        mc = Microcontroller(name='mc1')
         mc.execute(code)
         self.assertEqual(3, mc.acc)
         mc.register('acc').write(2)
@@ -254,7 +258,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         + mov 1 acc
         - mov 3 acc
         """
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute(code)
         self.assertEqual(3, mc.acc)
         mc.register('acc').write(3)
@@ -272,7 +276,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         + mov 1 acc
         - mov 3 acc
         """
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute(code)
         self.assertEqual(1, mc.acc)
         mc.register('acc').write(2)
@@ -285,7 +289,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
         + mov 3 acc
         - mov 1 acc
         """
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute(code)
         self.assertEqual(1, mc.acc)
         mc.register('acc').write(2)
@@ -299,8 +303,8 @@ class MicrocontrollerTestCase(unittest.TestCase):
         c2 = """
           add p1
         """
-        mc1 = parts.Microcontroller(gpio=1)
-        mc2 = parts.Microcontroller(gpio=2)
+        mc1 = Microcontroller(gpio=1)
+        mc2 = Microcontroller(gpio=2)
         mc1.p0.link(mc2.p1)
         mc1.execute(c1)
         mc2.execute(c2)
@@ -314,7 +318,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
           mov 50 acc
           mov null acc
         """
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute(c)
         self.assertEqual(0, mc.acc)
 
@@ -324,7 +328,7 @@ class MicrocontrollerTestCase(unittest.TestCase):
           teq acc 5
         - jmp a
         """
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute(code)
         self.assertEqual(5, mc.acc)
 
@@ -334,16 +338,16 @@ class MicrocontrollerTestCase(unittest.TestCase):
           teq acc 5
         - jmp a
         """
-        mc = parts.Microcontroller()
+        mc = Microcontroller()
         mc.execute(code)
         self.assertEqual(5, mc.acc)
 
     def test_io_stepping(self):
-        mc1 = parts.Microcontroller('mc1', gpio=1)
+        mc1 = Microcontroller('mc1', gpio=1)
         mc1.compile("""
             mov p0 acc
         """)
-        mc2 = parts.Microcontroller('mc2', gpio=2)
+        mc2 = Microcontroller('mc2', gpio=2)
         mc2.compile("""
             mov 1 p1
         """)
