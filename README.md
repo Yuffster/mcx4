@@ -1,6 +1,6 @@
 # 诚尚Micro MCxxxx Emulator
 
-![Travis Build Status](https://travis-ci.org/Yuffster/hkio.svg)
+![Travis Build Status](https://travis-ci.org/Yuffster/mcx4.svg)
 
 This library provides an emulator for the 诚尚Micro MCxxxx family of Microprocessors, specifically the MC4000 and MC6000.
 
