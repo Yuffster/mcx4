@@ -1,6 +1,6 @@
 import unittest
-import parts
-import exceptions as x
+from mcx4 import parts
+import mcx4.exceptions as x
 
 class MicrocontrollerTestCase(unittest.TestCase):
 

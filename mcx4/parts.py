@@ -1,4 +1,4 @@
-import exceptions as x
+import mcx4.exceptions as x
 
 class Microcontroller():
 
@@ -489,3 +489,14 @@ class CPU():
 
     def test_gt(self, a, b):
         return (a > b, not(a > b))
+
+
+class Time():
+
+    _time = 0
+
+    def get(self):
+        return self._time
+
+    def tick(self):
+        self._time += 1
