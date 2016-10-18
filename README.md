@@ -79,14 +79,12 @@ mov 2 acc    # Write 2 to ACC
 
 ### nop
 
-No operation; useful for synchronizing between two processors.
+No operation, but takes a full cycle.  Useful for synchronizing between two processors.
 
 #### Examples
 
-No operation.
-
 ```
-  nop
+  nop         ; This line doesn't do anything.
 ```
 
 ### mov [Register/Input] [Register]
@@ -120,26 +118,22 @@ Add the value of the provided register or input to `ACC`.
 
 #### Examples
 
-Following this code's execution, `ACC` will be equal to 3.
-
 ```
 mov 1 acc
 add 1
-add 1
+add 1         ; ACC is 3.
 ```
 
 ### sub [Register/Input]
 
-Subtract the value of the provided register or input to `ACC`.
+Subtract the value of the provided register or input from `ACC`.
 
 #### Examples
-
-Following this code's execution, `ACC` will be equal to -2.
 
 ```
 mov 0 acc
 add 1
-add 1
+add 1         ; ACC is -2.
 ```
 
 ### mul [Register/Input]
@@ -148,11 +142,9 @@ Multiply the value of the provided register or input by `ACC` and store the resu
 
 #### Examples
 
-Following this code's execution, `ACC` will be equal to 10.
-
 ```
 mov 5 acc
-mul 2
+mul 2         ; ACC is 10.
 ```
 
 ### not
@@ -165,52 +157,40 @@ Replace the `ACC` register value with that of the digit indicated by the registe
 
 #### Examples
 
-`ACC` will be set to 7.
+```
+mov 567 acc
+dgt 0        ; ACC is 7.
+```
 
 ```
 mov 567 acc
-dgt 0
+dgt 1        ; ACC is 6.
 ```
-
-`ACC` will be set to 6.
 
 ```
 mov 567 acc
-dgt 1
-```
-
-`ACC` will be set to 5.
-
-```
-mov 567 acc
-dgt 2
+dgt 2         ; ACC is 5.
 ```
 
 ### dst [Register/Input] [Register/Input]
 
-Set the value of the provided digit to the desired value.
+Set the value of the provided digit within `ACC` to the desired value.
 
 ### Examples
 
-`ACC` will be set to 569.
+```
+mov 567 acc
+dst 0 9       ; ACC is 569.
+```
 
 ```
 mov 567 acc
-dst 0 9
+dst 1 9       ; ACC is 597.
 ```
-
-`ACC` will be set to 597.
 
 ```
 mov 567 acc
-dst 1 9
-```
-
-`ACC` will be set to 967.
-
-```
-mov 567 acc
-dst 2 9
+dst 2 9       ; ACC is 967.
 ```
 
 ### jmp
