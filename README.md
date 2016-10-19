@@ -8,10 +8,11 @@ This library provides an emulator for the 诚尚Micro MCxxxx family of Microproc
 
 The MC4000 and MC6000 differ in program memory capacity, number of registers, and XBus port availability.
 
-| Model  | Program Memory | ACC | DAT | XBus | GPIO |
-|--------|----------------|-----|-----|------|------|
-| MC4000 | 9 lines        | Yes | No  | 2    | 2    | 
-| MC6000 | 14 lines       | Yes | Yes | 4    | 2    |  
+| Model   | Program Memory | ACC | DAT | XBus | GPIO |
+|---------|----------------|-----|-----|------|------|
+| MC4000  | 9 lines        | Yes | No  | 2    | 2    |
+| MC4000X | 9 lines        | Yes | No  | 4    | 0    | 
+| MC6000  | 14 lines       | Yes | Yes | 4    | 2    |  
 
 ## GPIO
 

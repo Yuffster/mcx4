@@ -141,6 +141,11 @@ class MC4000(Microcontroller):
     _xbuses = 1
     _dats = 0
 
+class MC4000X(Microcontroller):
+
+    _gpios = 0
+    _xbuses = 4
+    _dats = 0
 
 class MC6000(Microcontroller):
 
