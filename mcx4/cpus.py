@@ -189,6 +189,10 @@ class CPU():
     def do_nop(self):
         pass  # Easiest instruction ever.
 
+    def do_slp(self, a):
+        a = self._mc.value(a)
+        self._mc.sleep(a)
+
     def do_test(self, comp, args):
         meth = getattr(self, 'test_'+comp, None)
         if meth is None:

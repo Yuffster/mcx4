@@ -1,6 +1,8 @@
 import mcx4.exceptions as x
 from mcx4.cpus import CPU
 from mcx4.interfaces import GPIO, XBUS, Register, NullRegister, Interface
+from mcx4 import time
+
 
 class Microcontroller():
 
@@ -18,6 +20,8 @@ class Microcontroller():
     _part_count = 0  # static
 
     _cpu = None  # CPU
+
+    _sleep_until = 0  # Keeps track of sleep state.
 
     def __init__(self, name=None, gpio=None, xbus=None, dats=None):
         self._pnums = {'p':self._gpios, 'x':self._xbuses}
@@ -123,7 +127,19 @@ class Microcontroller():
         """
         Execute the next instruction.
         """
-        self._cpu.step()
+        if self.sleeping() is False:
+            self._cpu.step()
+
+    def sleep(self, atus):
+        self._sleep_until = time.end_time(atus)
+
+    def sleeping(self):
+        if time.get() is None or self._sleep_until is 0:
+            return False
+        if time.get() >= self._sleep_until:
+            self._sleep_until = 0
+            return False
+        return self._sleep_until
 
     @property
     def name(self):
