@@ -21,6 +21,8 @@ class Board():
         """
         Step one cycle.
         """
+        if len(self._items) == 0:
+            return
         sleeps = []
         for i in self._items:
             sleep = i.sleeping()

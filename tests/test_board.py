@@ -55,3 +55,7 @@ class BoardTestCase(unittest.TestCase):
         b.step()  # mov 100 acc
         self.assertEqual(t + 1002, time.get())
         self.assertEqual(100, mc1.acc)
+
+    def test_step_empty_board(self):
+        b = Board()
+        b.step()
