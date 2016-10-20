@@ -6,7 +6,7 @@ class CPU():
     _mc = None  # Microcontroller
     _exec_plus = False  # Whether or not to execute +.
     _exec_minus = False  # Whether or not to execute -.
-    _cursor = 0
+    _inst_pointer = 0  # Instruction pointer.
     _labels = None  # {label:inst_num}
 
     def __init__(self, mc=None):
@@ -17,7 +17,7 @@ class CPU():
         self._insts = []
         self._exec_plus = False
         self._exec_minus = False
-        self._cursor = 0
+        self._inst_pointer = 0
         self._labels = {}
 
     def execute(self, code):
@@ -33,9 +33,9 @@ class CPU():
             self._insts = code
         else:
             self.compile(code)
-        while self._cursor < len(self._insts):
+        while self._inst_pointer < len(self._insts):
             self.step(loop=False)
-        self._cursor = 0
+        self._inst_pointer = 0
 
     def step(self, loop=True):
         """
@@ -47,14 +47,14 @@ class CPU():
         Cursor will be reset to 0 after all instructions are complete,
         so stepping will loop the execution, unless loop is set to False.
         """
-        c = self.exec_inst(self._insts[self._cursor])
+        c = self.exec_inst(self._insts[self._inst_pointer])
         if c is not None:
-            self._cursor = c
+            self._inst_pointer = c
         else:
-            self._cursor += 1
+            self._inst_pointer += 1
         # Start over if we're done.
-        if loop and self._cursor == len(self._insts):
-            self._cursor = 0
+        if loop and self._inst_pointer == len(self._insts):
+            self._inst_pointer = 0
 
     def exec_inst(self, inst):
         """
