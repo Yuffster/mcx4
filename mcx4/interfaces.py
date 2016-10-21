@@ -1,9 +1,13 @@
 import mcx4.exceptions as x
+from mcx4 import time
+
 
 class Interface():
 
     _parent = None  # Microcontroller
     _output = 0  # Output buffer.
+    _next_output = None
+    _write_time = None
     _circuit = None
     _name = ""
 
@@ -13,7 +17,14 @@ class Interface():
         self._name = name
 
     def write(self, val):
-        self._output = val
+        if self.output == val:
+            return  # Nothing necessary.
+        if self._parent._board is None:
+            self._output = val
+        else:
+            t = time.get()
+            self._next_output = val
+            self._write_time = t
 
     def read(self):
         """
@@ -44,6 +55,11 @@ class Interface():
 
     @property
     def output(self):
+        t = time.get()
+        if self._write_time and self._write_time < t:
+            self._output = self._next_output
+            self._next_output = None
+            self._write_time = None
         return self._output
 
     @property
@@ -62,7 +78,7 @@ class GPIO(Interface):
             val = 100
         if val < 0:
             val = 0
-        self._output = val
+        super().write(val)
 
 
 class XBUS(Interface):

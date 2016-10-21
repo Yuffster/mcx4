@@ -16,6 +16,7 @@ class Board():
             raise TypeError("Object added to board must be Microcontroller.")
         if thing not in self._items:
             self._items.append(thing)
+        thing.set_board(self)
 
     def step(self):
         """

@@ -23,6 +23,8 @@ class Microcontroller():
 
     _sleep_until = 0  # Keeps track of sleep state.
 
+    _board = None  # Board
+
     def __init__(self, name=None, gpio=None, xbus=None, dats=None):
         self._pnums = {'p':self._gpios, 'x':self._xbuses}
         if gpio is not None:
@@ -45,6 +47,14 @@ class Microcontroller():
         if reg:
             return reg
         raise(AttributeError("Invalid attribute: {}".format(name)))
+
+    def set_board(self, board):
+        """
+        The board object represents the global context, and will
+        effect whether or not port I/O is instantaneous or based
+        on nonparallel cycles.
+        """
+        self._board = board
 
     def value(self, val):
         reg = self.interface(val)
