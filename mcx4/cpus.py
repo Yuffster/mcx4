@@ -98,6 +98,8 @@ class CPU():
         lines = code.split('\n')
         i = 0  # Instruction number (lines can be null and don't count)
         for l in lines:
+            l = l.split(';')[0]  # Strip comments and whitespace.
+            l = l.split('#')[0]
             if ':' in l:  # Record and strip labels.
                 label = l.split(':')
                 self._labels[label[0].strip()] = i
@@ -105,8 +107,6 @@ class CPU():
                     l = label[1]
                 else:
                     l = ''
-            l = l.split(';')[0]  # Strip comments and whitespace.
-            l = l.split('#')[0]
             l = l.strip()
             if l == '':
                 continue
