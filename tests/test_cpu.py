@@ -268,3 +268,10 @@ class CPUTestCase(unittest.TestCase):
         mc2.step()
         mc1.step()
         self.assertEqual(1, mc1.acc)
+
+    def test_step_empty_instructions(self):
+        mc1 = Microcontroller('mc1', gpio=1)
+        mc1.compile("""
+            # :)
+        """)
+        mc1.step()

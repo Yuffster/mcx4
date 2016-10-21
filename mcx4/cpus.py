@@ -47,6 +47,8 @@ class CPU():
         Cursor will be reset to 0 after all instructions are complete,
         so stepping will loop the execution, unless loop is set to False.
         """
+        if len(self._insts) == 0:
+            return
         c = self.exec_inst(self._insts[self._inst_pointer])
         if c is not None:
             self._inst_pointer = c
