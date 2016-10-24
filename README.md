@@ -221,8 +221,6 @@ jmp l
 
 ### slp [Register/Input]
 
-*Not implemented.*
-
 #### Examples
 
 Sleep for one time unit.
